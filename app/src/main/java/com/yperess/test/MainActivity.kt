@@ -1,8 +1,10 @@
 package com.yperess.test
 
+import android.animation.ObjectAnimator
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.util.Property
 import android.view.ViewGroup
 import android.view.animation.BounceInterpolator
 import android.widget.EdgeEffect
@@ -36,27 +38,36 @@ class MainActivity : AppCompatActivity() {
             override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {}
         }
         bounce.setOnClickListener {
-            recycler_view.postDelayed({
-                SpringAnimation(recycler_view, ScrollXProperty())
-                        .setSpring(SpringForce()
-                                .setFinalPosition(0f)
-                                .setStiffness(SpringForce.STIFFNESS_LOW)
-                                .setDampingRatio(SpringForce.DAMPING_RATIO_MEDIUM_BOUNCY))
-                        .addUpdateListener { _, value, velocity ->
-                            Log.d("MainActivity", "value=$value, velocity=$velocity")
-                        }
-                        .start()
-            }, 500L)
-
+            ObjectAnimator.ofInt(recycler_view, ScrollXProperty(), 0).apply {
+                interpolator = BounceInterpolator()
+                duration = 500L
+            }.start()
+        }
+        spring.setOnClickListener {
+            SpringAnimation(recycler_view, ScrollXFloatPropertyCompat())
+                    .setSpring(SpringForce()
+                            .setFinalPosition(0f)
+                            .setStiffness(SpringForce.STIFFNESS_LOW)
+                            .setDampingRatio(SpringForce.DAMPING_RATIO_MEDIUM_BOUNCY))
+                    .start()
         }
     }
 
-    class ScrollXProperty : FloatPropertyCompat<RecyclerView>("scrollX") {
+    class ScrollXFloatPropertyCompat : FloatPropertyCompat<RecyclerView>("scrollX") {
         override fun setValue(`object`: RecyclerView, value: Float) {
             `object`.scrollBy(value.roundToInt() - getValue(`object`).roundToInt(), 0)
         }
 
         override fun getValue(`object`: RecyclerView): Float =
                 `object`.computeHorizontalScrollOffset().toFloat()
+    }
+
+    class ScrollXProperty : Property<RecyclerView, Int>(Int::class.java, "horozontalOffset") {
+        override fun get(`object`: RecyclerView): Int =
+                `object`.computeHorizontalScrollOffset()
+
+        override fun set(`object`: RecyclerView, value: Int) {
+            `object`.scrollBy(value - get(`object`), 0)
+        }
     }
 }

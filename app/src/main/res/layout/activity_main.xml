@@ -26,6 +26,15 @@
         android:text="bounce"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@+id/spring"/>
+
+    <Button
+        android:id="@+id/spring"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="spring"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@+id/bounce"
         app:layout_constraintRight_toRightOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
