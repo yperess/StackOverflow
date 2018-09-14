@@ -23,18 +23,28 @@
         android:id="@+id/bounce"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="bounce"
+        android:text="go"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toLeftOf="@+id/spring"/>
+        app:layout_constraintRight_toLeftOf="@+id/interpolation_selection"/>
 
-    <Button
-        android:id="@+id/spring"
+    <Spinner
+        android:id="@+id/interpolation_selection"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="spring"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/bounce"
+        app:layout_constraintBottom_toBottomOf="@+id/bounce"
         app:layout_constraintLeft_toRightOf="@+id/bounce"
+        app:layout_constraintRight_toLeftOf="@+id/enable_optimizations"/>
+
+    <CheckBox
+        android:id="@+id/enable_optimizations"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Optimize"
+        app:layout_constraintTop_toTopOf="@+id/bounce"
+        app:layout_constraintBottom_toBottomOf="@+id/bounce"
+        app:layout_constraintLeft_toRightOf="@+id/interpolation_selection"
         app:layout_constraintRight_toRightOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

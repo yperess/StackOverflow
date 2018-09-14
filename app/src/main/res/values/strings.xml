@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">Test</string>
+    <string-array name="interpolators">
+        <item>AccelerateDecelerate</item>
+        <item>Accelerate</item>
+        <item>Anticipate</item>
+        <item>AnticipateOvershoot</item>
+        <item>Bounce</item>
+        <item>Cycle</item>
+        <item>Decelerate</item>
+        <item>Linear</item>
+        <item>Overshoot</item>
+    </string-array>
 </resources>

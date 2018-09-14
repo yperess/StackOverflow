@@ -1,29 +1,36 @@
 package com.yperess.test
 
 import android.animation.ObjectAnimator
-import androidx.appcompat.app.AppCompatActivity
+import android.animation.TimeInterpolator
 import android.os.Bundle
-import android.util.Log
-import android.util.Property
+import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.AnticipateInterpolator
+import android.view.animation.AnticipateOvershootInterpolator
+import android.view.animation.BaseInterpolator
 import android.view.animation.BounceInterpolator
-import android.widget.EdgeEffect
+import android.view.animation.CycleInterpolator
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.LinearInterpolator
+import android.view.animation.OvershootInterpolator
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.ImageView
-import androidx.dynamicanimation.animation.DynamicAnimation
-import androidx.dynamicanimation.animation.FloatPropertyCompat
-import androidx.dynamicanimation.animation.SpringAnimation
-import androidx.dynamicanimation.animation.SpringForce
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlin.math.roundToInt
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
+
+    private lateinit var interpolator: BaseInterpolator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         val itemSize = resources.getDimensionPixelSize(R.dimen.list_item_size)
-        val itemsCount = 6
+        val itemsCount = 100
         recycler_view.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             override fun onCreateViewHolder(parent: ViewGroup,
                     viewType: Int): RecyclerView.ViewHolder {
@@ -37,37 +44,46 @@ class MainActivity : AppCompatActivity() {
 
             override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {}
         }
-        bounce.setOnClickListener {
-            ObjectAnimator.ofInt(recycler_view, ScrollXProperty(), 0).apply {
-                interpolator = BounceInterpolator()
+        interpolation_selection.apply {
+            adapter = ArrayAdapter.createFromResource(this@MainActivity,
+                    R.array.interpolators, android.R.layout.simple_spinner_item).also { adapter ->
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_item)
+            }
+            onItemSelectedListener = this@MainActivity
+            setSelection(0)
+        }
+        bounce.setOnClickListener { view ->
+            val interpolatorWrapper = TimeInterpolator { interpolator.getInterpolation(it) }
+            ObjectAnimator.ofInt(recycler_view, ScrollXProperty(enable_optimizations.isChecked), 0).apply {
+                interpolator = interpolatorWrapper
                 duration = 500L
             }.start()
         }
-        spring.setOnClickListener {
-            SpringAnimation(recycler_view, ScrollXFloatPropertyCompat())
-                    .setSpring(SpringForce()
-                            .setFinalPosition(0f)
-                            .setStiffness(SpringForce.STIFFNESS_LOW)
-                            .setDampingRatio(SpringForce.DAMPING_RATIO_MEDIUM_BOUNCY))
-                    .start()
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // AdapterView.OnItemSelectedListener
+
+    override fun onNothingSelected(parent: AdapterView<*>) {
+        interpolation_selection.setSelection(0)
+    }
+
+    override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
+        interpolator = when (position) {
+            0 -> AccelerateDecelerateInterpolator()
+            1 -> AccelerateInterpolator()
+            2 -> AnticipateInterpolator()
+            3 -> AnticipateOvershootInterpolator()
+            4 -> BounceInterpolator()
+            5 -> CycleInterpolator(3f)
+            6 -> DecelerateInterpolator()
+            7 -> LinearInterpolator()
+            8 -> OvershootInterpolator()
+            else -> {
+                onNothingSelected(parent)
+                return
+            }
         }
     }
 
-    class ScrollXFloatPropertyCompat : FloatPropertyCompat<RecyclerView>("scrollX") {
-        override fun setValue(`object`: RecyclerView, value: Float) {
-            `object`.scrollBy(value.roundToInt() - getValue(`object`).roundToInt(), 0)
-        }
-
-        override fun getValue(`object`: RecyclerView): Float =
-                `object`.computeHorizontalScrollOffset().toFloat()
-    }
-
-    class ScrollXProperty : Property<RecyclerView, Int>(Int::class.java, "horozontalOffset") {
-        override fun get(`object`: RecyclerView): Int =
-                `object`.computeHorizontalScrollOffset()
-
-        override fun set(`object`: RecyclerView, value: Int) {
-            `object`.scrollBy(value - get(`object`), 0)
-        }
-    }
 }
