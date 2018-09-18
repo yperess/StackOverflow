@@ -1,4 +1,4 @@
-package com.yperess.test
+package com.yperess.stackoverflow
 
 import androidx.test.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
