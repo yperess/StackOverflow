@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">StackOverflow</string>
+    <string name="video_wlp_description">Test Video Live Wallpaper</string>
 </resources>
