@@ -3,4 +3,4 @@
 <wallpaper xmlns:android="http://schemas.android.com/apk/res/android"
     android:thumbnail="@android:drawable/sym_def_app_icon"
     android:description="@string/video_wlp_description"
-    android:settingsActivity="com.yperess.stackoverflow.MainActivity"/>
+    android:settingsActivity="com.yperess.stackoverflow.settings.SettingsActivity"/>
