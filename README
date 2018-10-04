@@ -1,1 +1,20 @@
-My inprogress solution to: https://stackoverflow.com/questions/50091878/how-to-fit-video-in-live-wallpaper-by-center-crop-and-by-fitting-to-width-heigh
+My in-progress solution to: https://stackoverflow.com/questions/50091878/how-to-fit-video-in-live-wallpaper-by-center-crop-and-by-fitting-to-width-heigh
+
+The way this works is by creating an instance of the GlEngine. In the engine a GLThread is created,
+which is just a copy of the GLThread from SurfaceView in Kotlin, there's nothing special there. We
+create a `MovieWallpaperRenderer`. The renderer is where the real work is done and it follows these
+rules:
+
+1. When the surface changes it gets a call to `setSurfaceSize` this will trigger the vertices to be
+updated so that the video scaling will work. It is possible to also simply update a transformation
+matrix but I wanted to keep this as obvious as possible.
+2. When the video size changes it gets a call to `setVideoSize` this will recreate the surface
+texture as well as update the vertices since the scaling will have most likely changed.
+
+**The Rendering:**
+
+The `MoveiWallpaperRenderer` creates a `SurfaceTexture` around a texture that was allocated in the
+OpenGL's `onSurfaceCreated` method. It sets the buffer size and listens to new frames which will
+mark the texture as dirty. Once created we tell the Exo Media Player to send frames to our new
+SurfaceTexture.  The draw loop now updates the texture image if needed and draws a simple rectangle
+with the texture.
