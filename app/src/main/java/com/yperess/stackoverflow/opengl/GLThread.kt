@@ -335,7 +335,9 @@ internal class GLThread(
         private val condition = newCondition()
 
         fun signalAll() {
-            condition.signalAll()
+            if (isHeldByCurrentThread) {
+                condition.signalAll()
+            }
         }
 
         fun await() {

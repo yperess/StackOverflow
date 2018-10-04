@@ -10,7 +10,6 @@ import android.view.Surface
 import android.view.View
 import com.google.android.exoplayer2.SimpleExoPlayer
 import timber.log.Timber
-import java.lang.IllegalStateException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -25,10 +24,15 @@ import javax.microedition.khronos.opengles.GL10
  */
 class MovieWallpaperRenderer(
     private val exoMediaPlayer: SimpleExoPlayer,
-    private val mode: MovieLiveWallpaperService.Mode,
+    mode: MovieLiveWallpaperService.Mode,
     private val context: Context
 ) : GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
 
+    var mode: MovieLiveWallpaperService.Mode = mode
+        set(value) {
+            field = value
+            updateVertices()
+        }
     private var videoWidth = 100
     private var videoHeight = 100
     private var surfaceWidth = 0
@@ -64,6 +68,7 @@ class MovieWallpaperRenderer(
     private var quadTexCoordParam = 0
 
     fun setVideoSize(width: Int, height: Int) {
+        Timber.d("setVideoSize(%d, %d) video=%dx%d", width, height, videoWidth, videoHeight)
         if (videoWidth != width || videoHeight != height) {
             videoWidth = width
             videoHeight = height
@@ -186,6 +191,9 @@ class MovieWallpaperRenderer(
     private fun updateVertices() {
         Timber.d("updateVertices() video=%dx%d, surface=%dx%d, mode=%s",
                 videoWidth, videoHeight, surfaceWidth, surfaceHeight, mode)
+        if (surfaceWidth == 0 || surfaceHeight == 0) {
+            return
+        }
         val isHorizontal = videoWidth < surfaceWidth
         val values = when (mode) {
             MovieLiveWallpaperService.Mode.FIT_START -> {
@@ -267,7 +275,22 @@ class MovieWallpaperRenderer(
                             +1f, top, 0f)
                 }
             }
-            else -> throw IllegalStateException("invalid mode $mode")
+            MovieLiveWallpaperService.Mode.FIT_XY -> floatArrayOf(
+                    -1f, -1f, 0f,
+                    -1f, +1f, 0f,
+                    +1f, -1f, 0f,
+                    +1f, +1f, 0f)
+            MovieLiveWallpaperService.Mode.CENTER_CROP -> {
+                val maxScale = Math.max(surfaceWidth / videoWidth, surfaceHeight / videoHeight)
+                        .toFloat()
+                val width = videoWidth * maxScale / surfaceWidth
+                val height = videoHeight * maxScale / surfaceHeight
+                floatArrayOf(
+                        -width, -height, 0f,
+                        -width, +height, 0f,
+                        +width, -height, 0f,
+                        +width, +height, 0f)
+            }
         }
         Timber.d("newValues=[%s]", values.joinToString())
         quadVertices.position(0)

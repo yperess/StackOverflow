@@ -26,6 +26,11 @@ class SettingsActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener
             scale_type.adapter = it
         }
         scale_type.onItemSelectedListener = this
+        scaleTypes.indexOf(scaleType)
+                .takeIf { it >= 0 }
+                ?.let { selectedIndex ->
+                    scale_type.setSelection(selectedIndex)
+                }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////

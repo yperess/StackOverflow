@@ -1,6 +1,6 @@
 package com.yperess.stackoverflow
 
-import android.content.Context
+import android.content.SharedPreferences
 import android.opengl.GLSurfaceView
 import android.preference.PreferenceManager
 import android.service.wallpaper.WallpaperService
@@ -40,13 +40,9 @@ class MovieLiveWallpaperService : WallpaperService() {
         get() = PreferenceManager.getDefaultSharedPreferences(this)
                 .getString("scale_type", Mode.CENTER_CROP.name).let(Mode::valueOf)
 
-    override fun onCreateEngine(): Engine = when (mode) {
-        Mode.FIT_XY,
-        Mode.CENTER_CROP -> VideoLiveWallpaperEngine(mode)
-        else -> GlEngine(mode)
-    }
+    override fun onCreateEngine(): Engine = GlEngine()
 
-    protected fun initExoMediaPlayer(mode: Mode): SimpleExoPlayer {
+    protected fun initExoMediaPlayer(): SimpleExoPlayer {
         val bandwidthMeter = DefaultBandwidthMeter()
         val videoTrackSelectionFactory = AdaptiveTrackSelection.Factory(bandwidthMeter)
         val trackSelector = DefaultTrackSelector(videoTrackSelectionFactory)
@@ -54,11 +50,7 @@ class MovieLiveWallpaperService : WallpaperService() {
         player.playWhenReady = true
         player.repeatMode = Player.REPEAT_MODE_ONE
         player.volume = 0f
-        if (mode == Mode.CENTER_CROP) {
-            player.videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
-        } else {
-            player.videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT
-        }
+        player.videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT
         val videoUri = RawResourceDataSource.buildRawResourceUri(R.raw.small)
         val dataSourceFactory = DataSource.Factory { RawResourceDataSource(this) }
         val mediaSourceFactory = ExtractorMediaSource.Factory(dataSourceFactory)
@@ -67,40 +59,10 @@ class MovieLiveWallpaperService : WallpaperService() {
         return player
     }
 
-    inner class VideoLiveWallpaperEngine(
-            private val mode: Mode
-    ) : WallpaperService.Engine() {
+    inner class GlEngine : WallpaperService.Engine(), VideoListener,
+            SharedPreferences.OnSharedPreferenceChangeListener {
 
-        private val exoMediaPlayer = initExoMediaPlayer(mode)
-
-        private val context: Context = this@MovieLiveWallpaperService
-
-        override fun onSurfaceCreated(holder: SurfaceHolder) {
-            super.onSurfaceCreated(holder)
-            exoMediaPlayer.setVideoSurfaceHolder(holder)
-        }
-
-        override fun onDestroy() {
-            exoMediaPlayer.release()
-            super.onDestroy()
-        }
-
-        override fun onVisibilityChanged(visible: Boolean) {
-            exoMediaPlayer.playWhenReady = visible
-        }
-
-        init {
-            if (mode != Mode.FIT_XY && mode != Mode.CENTER_CROP) {
-                throw IllegalArgumentException("Invalid mode $mode")
-            }
-        }
-    }
-
-    inner class GlEngine(
-        mode: Mode
-    ) : WallpaperService.Engine(), VideoListener {
-
-        private val exoMediaPlayer = initExoMediaPlayer(mode)
+        private val exoMediaPlayer = initExoMediaPlayer()
         private val renderer = MovieWallpaperRenderer(exoMediaPlayer, mode,
                 this@MovieLiveWallpaperService)
 
@@ -110,6 +72,7 @@ class MovieLiveWallpaperService : WallpaperService() {
         // Engine
 
         override fun onVisibilityChanged(visible: Boolean) {
+            Timber.d("onVisibilityChanged(%s)", visible)
             exoMediaPlayer.playWhenReady = visible
             if (visible) onResume()
             else onPause()
@@ -117,6 +80,7 @@ class MovieLiveWallpaperService : WallpaperService() {
 
         @Synchronized
         override fun onSurfaceCreated(holder: SurfaceHolder) {
+            Timber.d("onSurfaceCreated(%s)", holder)
             glThread.surfaceCreated(holder)
         }
 
@@ -126,13 +90,22 @@ class MovieLiveWallpaperService : WallpaperService() {
             width: Int,
             height: Int
         ) {
+            Timber.d("onSurfaceChanged(%s, %d, %d, %d)", holder, format, width, height)
             glThread.onWindowResize(width, height)
             renderer.setSurfaceSize(width, height)
         }
 
         @Synchronized
         override fun onSurfaceDestroyed(holder: SurfaceHolder?) {
+            Timber.d("onSurfaceDestroyed(%s)", holder)
             glThread.requestExitAndWait()
+        }
+
+        override fun onDestroy() {
+            Timber.d("onDestroy()")
+            PreferenceManager.getDefaultSharedPreferences(this@MovieLiveWallpaperService)
+                    .unregisterOnSharedPreferenceChangeListener(this)
+            super.onDestroy()
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////////
@@ -155,6 +128,18 @@ class MovieLiveWallpaperService : WallpaperService() {
         override fun onRenderedFirstFrame() {}
 
         ////////////////////////////////////////////////////////////////////////////////////////////
+        // SharedPreferences.OnSharedPreferenceChangeListener
+
+        override fun onSharedPreferenceChanged(
+            sharedPreferences: SharedPreferences,
+            key: String
+        ) {
+            when (key) {
+                "scale_type" -> renderer.mode = mode
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
         // Private helper methods
 
         private fun onPause() {
@@ -166,9 +151,9 @@ class MovieLiveWallpaperService : WallpaperService() {
         }
 
         init {
-            if (mode != Mode.FIT_CENTER && mode != Mode.FIT_START && mode != Mode.FIT_END) {
-                throw IllegalArgumentException("Invalid mode for GlEngine: $mode")
-            }
+            Timber.d("Creating new GlEngine")
+            PreferenceManager.getDefaultSharedPreferences(this@MovieLiveWallpaperService)
+                    .registerOnSharedPreferenceChangeListener(this)
             val configChooser = BaseConfigChooser.SimpleEGLConfigChooser(true)
             val contextFactory = DefaultContextFactory()
             val windowSurfaceFactory = DefaultWindowSurfaceFactory()
