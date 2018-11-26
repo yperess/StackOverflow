@@ -281,8 +281,7 @@ class MovieWallpaperRenderer(
                     +1f, -1f, 0f,
                     +1f, +1f, 0f)
             MovieLiveWallpaperService.Mode.CENTER_CROP -> {
-                val maxScale = Math.max(surfaceWidth / videoWidth, surfaceHeight / videoHeight)
-                        .toFloat()
+                val maxScale = Math.max(surfaceWidth / videoWidth.toFloat(), surfaceHeight / videoHeight.toFloat())
                 val width = videoWidth * maxScale / surfaceWidth
                 val height = videoHeight * maxScale / surfaceHeight
                 floatArrayOf(
